@@ -1,0 +1,8 @@
+mediapipe==0.10.21
+numpy==1.26.4
+opencv-contrib-python==4.11.0.86
+jax==0.4.38
+jaxlib==0.4.38
+sentencepiece==0.2.0
+aiohttp==3.13.2
+pywebview==6.2.1

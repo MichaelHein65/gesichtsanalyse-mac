@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>de</string>
+  <key>CFBundleDisplayName</key>
+  <string>Gesichtsanalyse</string>
+  <key>CFBundleExecutable</key>
+  <string>Gesichtsanalyse</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
+  <key>CFBundleIdentifier</key>
+  <string>de.michaelhein.gesichtsanalyse</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>Gesichtsanalyse</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Die Kamera wird lokal verwendet, um Kopfbewegung und Mimik auf den 3D-Avatar zu übertragen.</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+</dict>
+</plist>

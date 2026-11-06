@@ -1,0 +1,16 @@
+[package]
+name = "gesichtserkennung"
+version = "0.1.0"
+edition = "2024"
+description = "Echtzeit-Gesichtsdetektion mit Kamerabild und Messgitter"
+publish = false
+
+[dependencies]
+image = { version = "0.25", default-features = false }
+minifb = "0.29"
+nokhwa = { version = "0.10.11", default-features = false, features = [
+  "decoding",
+  "input-avfoundation",
+] }
+rayon = "1.12"
+rustface = "0.1.7"

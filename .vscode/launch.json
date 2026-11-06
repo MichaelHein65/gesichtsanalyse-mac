@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Face Mesh (Python)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/python_app/main.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Gesichtserkennung debuggen",
+      "cargo": {
+        "args": ["build", "--release", "--bin=gesichtserkennung"],
+        "filter": {
+          "name": "gesichtserkennung",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

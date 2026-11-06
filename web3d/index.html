@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mimic – 3D Gesicht</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-rounded, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+        background: #130b22;
+        color: #fff7f1;
+      }
+
+      * { box-sizing: border-box; }
+      html, body, #stage { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body {
+        background:
+          radial-gradient(circle at 28% 18%, rgba(126, 55, 121, .48), transparent 32%),
+          radial-gradient(circle at 77% 48%, rgba(29, 111, 118, .18), transparent 38%),
+          linear-gradient(145deg, #261030 0%, #130b22 48%, #0c1525 100%);
+        user-select: none;
+      }
+
+      #stage { position: fixed; inset: 0; }
+      canvas { display: block; width: 100%; height: 100%; }
+
+      .glass {
+        position: fixed;
+        z-index: 2;
+        border: 1px solid rgba(255,255,255,.13);
+        background: linear-gradient(135deg, rgba(37, 19, 50, .76), rgba(10, 19, 34, .62));
+        box-shadow: 0 18px 55px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.07);
+        backdrop-filter: blur(18px) saturate(1.2);
+        -webkit-backdrop-filter: blur(18px) saturate(1.2);
+      }
+
+      .brand {
+        top: 24px;
+        left: 26px;
+        padding: 17px 20px 16px;
+        border-radius: 20px;
+        min-width: 220px;
+      }
+      .eyebrow { font-size: 10px; letter-spacing: .2em; color: #7ee6dd; font-weight: 760; }
+      h1 { margin: 4px 0 2px; font-size: 23px; letter-spacing: -.03em; font-weight: 730; }
+      .sub { font-size: 12px; color: rgba(255,255,255,.58); }
+
+      .status {
+        top: 25px;
+        right: 26px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 999px;
+        padding: 10px 14px 10px 11px;
+        font-size: 12px;
+        font-weight: 650;
+      }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: #ffb47a; box-shadow: 0 0 16px #ff8e6c; }
+      .status.live .dot { background: #71f1d1; box-shadow: 0 0 16px #37dabd; }
+      .status.error .dot { background: #ff647c; box-shadow: 0 0 16px #ff3659; }
+
+      .metrics {
+        left: 26px;
+        bottom: 27px;
+        width: 250px;
+        padding: 17px 18px;
+        border-radius: 20px;
+      }
+      .metric-title { font-size: 10px; color: rgba(255,255,255,.48); letter-spacing: .14em; font-weight: 700; margin-bottom: 13px; }
+      .row { display: grid; grid-template-columns: 50px 1fr 43px; align-items: center; gap: 9px; margin: 8px 0; }
+      .row span { font-size: 11px; color: rgba(255,255,255,.65); }
+      .bar { height: 5px; border-radius: 10px; background: rgba(255,255,255,.09); overflow: hidden; }
+      .fill { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #62dbc8, #ff8d73); transition: width .08s linear; }
+      .value { text-align: right; font-variant-numeric: tabular-nums; }
+
+      .controls {
+        right: 26px;
+        bottom: 27px;
+        display: flex;
+        gap: 9px;
+        padding: 8px;
+        border-radius: 18px;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 12px;
+        padding: 10px 14px;
+        color: rgba(255,255,255,.78);
+        background: rgba(255,255,255,.075);
+        font: 650 12px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+        cursor: pointer;
+        transition: .18s ease;
+      }
+      button:hover { color: white; background: rgba(255,255,255,.14); transform: translateY(-1px); }
+      button.recording { color: white; background: rgba(255, 82, 112, .72); }
+      .key { opacity: .42; margin-left: 6px; font-size: 9px; }
+
+      .footer {
+        position: fixed;
+        bottom: 19px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255,255,255,.32);
+        font-size: 10px;
+        letter-spacing: .08em;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 940px) {
+        .metrics { display: none; }
+        .footer { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <section class="glass brand">
+      <div class="eyebrow">MIMIC</div>
+      <h1>3D Face Studio</h1>
+      <div class="sub">478 Punkte · 52 Mimiken · lokal</div>
+    </section>
+    <div id="status" class="glass status"><i class="dot"></i><span id="statusText">Kamera wird gestartet …</span></div>
+    <section class="glass metrics">
+      <div class="metric-title">LIVE-AUSDRUCK</div>
+      <div class="row"><span>Lächeln</span><div class="bar"><i id="smileBar" class="fill"></i></div><span id="smileValue" class="value">0%</span></div>
+      <div class="row"><span>Mund</span><div class="bar"><i id="jawBar" class="fill"></i></div><span id="jawValue" class="value">0%</span></div>
+      <div class="row"><span>Brauen</span><div class="bar"><i id="browBar" class="fill"></i></div><span id="browValue" class="value">0%</span></div>
+      <div class="row"><span>Blinzeln</span><div class="bar"><i id="blinkBar" class="fill"></i></div><span id="blinkValue" class="value">0%</span></div>
+    </section>
+    <nav class="glass controls">
+      <button id="recordButton">Aufnehmen <span class="key">R</span></button>
+      <button id="closeButton">Schließen <span class="key">Q</span></button>
+    </nav>
+    <div class="footer"><span id="fps">0 FPS</span> · Kamera bleibt auf diesem Mac</div>
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

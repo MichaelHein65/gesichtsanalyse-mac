@@ -1,0 +1,11 @@
+{
+  "name": "mimic-3d-avatar",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Local Three.js renderer for the MediaPipe face-tracking app",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "three": "0.187.0"
+  }
+}

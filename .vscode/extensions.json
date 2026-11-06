@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "rust-lang.rust-analyzer",
+    "vadimcn.vscode-lldb"
+  ]
+}
