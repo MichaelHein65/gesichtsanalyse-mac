@@ -34,6 +34,17 @@ MODEL_PATH = PROJECT_ROOT / "models" / "face_landmarker.task"
 WEB_ROOT = PROJECT_ROOT / "web3d"
 OUTPUT_DIRECTORY = PROJECT_ROOT / "output"
 
+CAMERA_PERMISSION_METADATA = {
+    "arguments": {
+        3: {
+            "callable": {
+                "retval": {"type": b"v"},
+                "arguments": {0: {"type": b"^v"}, 1: {"type": b"Z"}},
+            }
+        }
+    }
+}
+
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="3D-Avatar mit MediaPipe-Steuerung")
@@ -85,6 +96,13 @@ def request_camera_permission() -> bool:
     if framework is None or not framework.load():
         return False
 
+    # Loading AVFoundation through NSBundle avoids an unnecessary Python wrapper,
+    # but PyObjC then needs the block signature registered explicitly.
+    objc.registerMetaDataForSelector(
+        b"AVCaptureDevice",
+        b"requestAccessForMediaType:completionHandler:",
+        CAMERA_PERMISSION_METADATA,
+    )
     capture_device = objc.lookUpClass("AVCaptureDevice")
     video_media_type = "vide"
     status = int(capture_device.authorizationStatusForMediaType_(video_media_type))

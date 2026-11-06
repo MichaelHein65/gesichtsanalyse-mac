@@ -84,7 +84,7 @@ Das Setup installiert die Python-Pakete, lädt Three.js lokal und baut anschlie�
 .venv/bin/python -m unittest discover -s python_app -p 'test_*.py' -v
 ```
 
-Der aktuelle Stand umfasst sieben automatisierte Tests einschließlich eines Lifecycle-Tests, der kontrolliert, dass der lokale Server seinen Port beim Beenden wieder freigibt.
+Der aktuelle Stand umfasst neun automatisierte Tests. Dazu gehören ein Lifecycle-Test für die Server-Portfreigabe und zwei Tests für die native macOS-Kameraberechtigung.
 
 ## Dokumentation
 

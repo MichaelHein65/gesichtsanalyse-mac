@@ -20,7 +20,7 @@ Stand: 6. November 2026
 - praktischer App-Start mit Live-Kamera bei ungefähr 30 Bildern pro Sekunde
 - macOS-Kamerafreigabe unter der App-Identität `de.michaelhein.gesichtsanalyse`
 - Ad-hoc-Codesignatur und gültige `Info.plist`
-- sieben automatisierte Python-Tests
+- neun automatisierte Python-Tests, darunter die AVFoundation-Blocksignatur
 - expliziter Server-Lifecycle-Test mit Portfreigabe
 
 ## Mögliche nächste Schritte
