@@ -16,6 +16,8 @@ flowchart LR
     Pose --> Recorder[JSONL-Recorder]
     Shapes --> Recorder
     Points --> Recorder
+    Recorder --> Playback[Lokale Wiedergabe-API]
+    Playback --> Avatar
 ```
 
 ## Prozesse und Komponenten
@@ -24,6 +26,7 @@ flowchart LR
 - `python_app/app3d.py` besitzt Kamera, MediaPipe-Instanz, Recorder und den ausschließlich an `127.0.0.1` gebundenen Server.
 - `web3d/assets/app.js` baut die 3D-Szene und überträgt Kopfpose sowie Blendshapes auf den Avatar.
 - `python_app/face_analysis.py` enthält Glättung, Kopfpose-Konvertierung und JSONL-Export.
+- Die Wiedergabe-API listet ausschließlich Dateien aus `output/` und liefert nur Zeitstempel, Kopfpose und Blendshapes an die Oberfläche. Dateinamen werden gegen Pfadwechsel validiert.
 
 ## Lebenszyklus
 

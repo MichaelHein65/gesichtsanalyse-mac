@@ -2,6 +2,8 @@
 
 Eine Aufzeichnung beginnt nur nach Betätigung von `R` oder „Aufnehmen“. Sie wird als JSON Lines im lokalen, von Git ignorierten Ordner `output/` gespeichert. Pro verarbeitetem Kamerabild entsteht genau eine JSON-Zeile.
 
+Über „Aufnahmen“ beziehungsweise `L` kann eine Datei direkt in der App ausgewählt werden. Für die Wiedergabe lädt der lokale Server nur Zeitstempel, Kopfpose und Blendshapes. Die umfangreichen 478 Landmarken verbleiben auf der Festplatte. Pause, Zeitleiste und die Rückkehr zur Live-Kamera sind in der Wiedergabeansicht verfügbar.
+
 ## Struktur einer Zeile
 
 ```json

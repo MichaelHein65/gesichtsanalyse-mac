@@ -15,7 +15,8 @@ Die empfohlene Anwendung verwendet **MediaPipe Face Landmarker, OpenCV und Three
 - die Kopfrichtung als Yaw, Pitch und Roll,
 - eine geglättete Live-Ansicht mit Messwertpanel,
 - einen beleuchteten 3D-Avatar, der Kopfhaltung, Blick und Mimik übernimmt,
-- optional eine JSONL-Aufzeichnung für spätere Auswertungen.
+- optional eine JSONL-Aufzeichnung für spätere Auswertungen,
+- einen Aufnahme-Browser mit zeitgenauer Avatar-Wiedergabe.
 
 Kamerabilder werden nicht übertragen und nicht gespeichert. Nur wenn die Aufnahme aktiviert wird, schreibt die Anwendung Messwerte in den lokalen Ordner `output`. Die 3D-Oberfläche läuft ausschließlich über einen kurzlebigen Server auf `127.0.0.1`; beim Schließen des App-Fensters werden Kamera, Tracker und Server gemeinsam beendet.
 
@@ -32,6 +33,9 @@ Nach einem frischen Klon wird die App zunächst gebaut:
 Bedienung des 3D-Studios:
 
 - `R`: Messwertaufnahme starten oder stoppen
+- `L`: gespeicherte Aufnahmen öffnen
+- `Leertaste`: Wiedergabe pausieren oder fortsetzen
+- „Live“: Wiedergabe beenden und zur Kamera zurückkehren
 - `Q`, `Esc`, „Schließen“ oder roter Fensterknopf: Anwendung vollständig beenden
 
 Der bisherige Face-Mesh-Diagnosemodus bleibt für Entwicklung und Kontrolle verfügbar:
@@ -84,7 +88,7 @@ Das Setup installiert die Python-Pakete, lädt Three.js lokal und baut anschlie�
 .venv/bin/python -m unittest discover -s python_app -p 'test_*.py' -v
 ```
 
-Der aktuelle Stand umfasst neun automatisierte Tests. Dazu gehören ein Lifecycle-Test für die Server-Portfreigabe und zwei Tests für die native macOS-Kameraberechtigung.
+Der aktuelle Stand umfasst zwölf automatisierte Tests. Dazu gehören Lifecycle- und Kameraberechtigungstests sowie Prüfungen für Aufnahme-API, Zeitnormalisierung und Pfadschutz.
 
 ## Dokumentation
 

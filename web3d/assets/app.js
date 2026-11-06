@@ -6,6 +6,19 @@ const statusText = document.querySelector('#statusText');
 const fpsElement = document.querySelector('#fps');
 const recordButton = document.querySelector('#recordButton');
 const closeButton = document.querySelector('#closeButton');
+const recordingsButton = document.querySelector('#recordingsButton');
+const recordingsPanel = document.querySelector('#recordingsPanel');
+const panelCloseButton = document.querySelector('#panelCloseButton');
+const recordingsList = document.querySelector('#recordingsList');
+const emptyRecordings = document.querySelector('#emptyRecordings');
+const playbackControls = document.querySelector('#playbackControls');
+const playbackName = document.querySelector('#playbackName');
+const playPauseButton = document.querySelector('#playPauseButton');
+const stopPlaybackButton = document.querySelector('#stopPlaybackButton');
+const timeline = document.querySelector('#timeline');
+const currentTimeElement = document.querySelector('#currentTime');
+const durationTimeElement = document.querySelector('#durationTime');
+const metricTitle = document.querySelector('#metricTitle');
 
 const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value || 0));
 const average = (...values) => values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -17,6 +30,17 @@ const tracking = {
   pose: { yaw: 0, pitch: 0, roll: 0 },
   blendshapes: {},
   receivedAt: 0,
+};
+
+const playback = {
+  active: false,
+  paused: false,
+  frames: [],
+  durationMs: 0,
+  positionMs: 0,
+  frameIndex: 0,
+  startedAt: 0,
+  name: '',
 };
 
 const scene = new THREE.Scene();
@@ -233,15 +257,188 @@ function setMetric(name, value) {
 }
 
 async function toggleRecording() {
-  if (!window.pywebview?.api) return;
+  if (!window.pywebview?.api || playback.active) return;
   const result = await window.pywebview.api.toggle_recording();
   recordButton.classList.toggle('recording', result.active);
   recordButton.firstChild.textContent = result.active ? 'Aufnahme läuft ' : 'Aufnehmen ';
+  if (!result.active && !recordingsPanel.classList.contains('hidden')) loadRecordings();
 }
+
+const formatTime = (milliseconds) => {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+};
+
+const formatSize = (bytes) => bytes < 1024 * 1024
+  ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+  : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+function applyPlaybackFrame(frame) {
+  if (!frame) return;
+  tracking.face = true;
+  tracking.pose = frame.pose;
+  tracking.blendshapes = frame.blendshapes;
+  tracking.receivedAt = performance.now();
+}
+
+function updatePlaybackUi() {
+  timeline.value = playback.durationMs > 0
+    ? Math.round(playback.positionMs / playback.durationMs * 1000)
+    : 0;
+  currentTimeElement.textContent = formatTime(playback.positionMs);
+  durationTimeElement.textContent = formatTime(playback.durationMs);
+}
+
+function seekPlayback(positionMs, now = performance.now()) {
+  if (!playback.frames.length) return;
+  playback.positionMs = Math.min(playback.durationMs, Math.max(0, positionMs));
+  let low = 0;
+  let high = playback.frames.length - 1;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (playback.frames[middle].time_ms <= playback.positionMs) low = middle;
+    else high = middle - 1;
+  }
+  playback.frameIndex = low;
+  playback.startedAt = now - playback.positionMs;
+  applyPlaybackFrame(playback.frames[low]);
+  updatePlaybackUi();
+}
+
+function stopPlayback() {
+  playback.active = false;
+  playback.paused = false;
+  playback.frames = [];
+  playbackControls.classList.add('hidden');
+  recordButton.disabled = false;
+  metricTitle.textContent = 'LIVE-AUSDRUCK';
+  statusElement.className = 'glass status';
+  statusText.textContent = 'Zurück zur Live-Kamera …';
+}
+
+function togglePlaybackPause() {
+  if (!playback.active) return;
+  const now = performance.now();
+  if (playback.paused) {
+    if (playback.positionMs >= playback.durationMs) seekPlayback(0, now);
+    playback.paused = false;
+    playback.startedAt = now - playback.positionMs;
+    playPauseButton.textContent = 'Pause';
+  } else {
+    playback.positionMs = Math.min(playback.durationMs, now - playback.startedAt);
+    playback.paused = true;
+    playPauseButton.textContent = 'Weiter';
+    updatePlaybackUi();
+  }
+}
+
+async function playRecording(name) {
+  emptyRecordings.hidden = false;
+  emptyRecordings.textContent = 'Aufnahme wird vorbereitet …';
+  try {
+    if (recordButton.classList.contains('recording')) await toggleRecording();
+    const response = await fetch(`/api/recordings/${encodeURIComponent(name)}`);
+    if (!response.ok) throw new Error(await response.text());
+    const recording = await response.json();
+    playback.active = true;
+    playback.paused = false;
+    playback.frames = recording.frames;
+    playback.durationMs = recording.duration_ms;
+    playback.positionMs = 0;
+    playback.frameIndex = 0;
+    playback.startedAt = performance.now();
+    playback.name = recording.name;
+    playbackName.textContent = `${recording.name} · ${recording.frame_count} Bilder`;
+    playbackControls.classList.remove('hidden');
+    emptyRecordings.hidden = true;
+    recordButton.disabled = true;
+    metricTitle.textContent = 'WIEDERGABE';
+    playPauseButton.textContent = 'Pause';
+    statusElement.className = 'glass status live';
+    statusText.textContent = 'Aufnahme wird abgespielt';
+    recordingsList.querySelectorAll('.recording-item').forEach((item) => {
+      item.classList.toggle('active', item.dataset.name === name);
+    });
+    seekPlayback(0);
+  } catch (error) {
+    emptyRecordings.hidden = false;
+    emptyRecordings.textContent = `Wiedergabe fehlgeschlagen: ${error.message}`;
+  }
+}
+
+async function loadRecordings() {
+  recordingsList.replaceChildren();
+  emptyRecordings.hidden = false;
+  emptyRecordings.textContent = 'Aufnahmen werden geladen …';
+  try {
+    const response = await fetch('/api/recordings');
+    if (!response.ok) throw new Error(await response.text());
+    const { recordings } = await response.json();
+    if (!recordings.length) {
+      emptyRecordings.textContent = 'Noch keine Aufnahme vorhanden. Starte eine mit R.';
+      return;
+    }
+    emptyRecordings.hidden = true;
+    recordings.forEach((recording) => {
+      const item = document.createElement('button');
+      item.className = 'recording-item';
+      item.dataset.name = recording.name;
+      const title = document.createElement('strong');
+      title.textContent = recording.name.replace('gesicht_', '').replace('.jsonl', '');
+      const details = document.createElement('span');
+      const date = new Date(recording.modified_ms).toLocaleString('de-DE', {
+        dateStyle: 'medium', timeStyle: 'short',
+      });
+      details.textContent = `${date} · ${formatSize(recording.size_bytes)}`;
+      item.append(title, details);
+      item.addEventListener('click', () => playRecording(recording.name));
+      recordingsList.append(item);
+    });
+  } catch (error) {
+    emptyRecordings.textContent = `Aufnahmen konnten nicht geladen werden: ${error.message}`;
+  }
+}
+
+function toggleRecordingsPanel(forceOpen) {
+  const shouldOpen = forceOpen ?? recordingsPanel.classList.contains('hidden');
+  recordingsPanel.classList.toggle('hidden', !shouldOpen);
+  if (shouldOpen) loadRecordings();
+}
+
+function updatePlayback(now) {
+  if (!playback.active) return;
+  tracking.receivedAt = now;
+  if (playback.paused) return;
+  playback.positionMs = Math.min(playback.durationMs, now - playback.startedAt);
+  while (
+    playback.frameIndex + 1 < playback.frames.length
+    && playback.frames[playback.frameIndex + 1].time_ms <= playback.positionMs
+  ) playback.frameIndex += 1;
+  applyPlaybackFrame(playback.frames[playback.frameIndex]);
+  updatePlaybackUi();
+  if (playback.positionMs >= playback.durationMs) {
+    playback.paused = true;
+    playPauseButton.textContent = 'Nochmal';
+    statusText.textContent = 'Wiedergabe beendet';
+  }
+}
+
 recordButton.addEventListener('click', toggleRecording);
+recordingsButton.addEventListener('click', () => toggleRecordingsPanel());
+panelCloseButton.addEventListener('click', () => toggleRecordingsPanel(false));
+playPauseButton.addEventListener('click', togglePlaybackPause);
+stopPlaybackButton.addEventListener('click', stopPlayback);
+timeline.addEventListener('input', () => {
+  seekPlayback(Number(timeline.value) / 1000 * playback.durationMs);
+});
 closeButton.addEventListener('click', () => window.pywebview?.api?.close());
 addEventListener('keydown', (event) => {
   if (event.key.toLowerCase() === 'r') toggleRecording();
+  if (event.key.toLowerCase() === 'l') toggleRecordingsPanel();
+  if (event.code === 'Space' && playback.active) {
+    event.preventDefault();
+    togglePlaybackPause();
+  }
   if (event.key.toLowerCase() === 'q' || event.key === 'Escape') window.pywebview?.api?.close();
 });
 
@@ -255,6 +452,7 @@ function connect() {
       return;
     }
     if (message.type !== 'tracking') return;
+    if (playback.active) return;
     tracking.face = message.face;
     tracking.receivedAt = performance.now();
     if (message.pose) tracking.pose = message.pose;
@@ -264,6 +462,7 @@ function connect() {
     statusText.textContent = message.face ? 'Gesicht aktiv' : 'Schau in die Kamera';
   });
   socket.addEventListener('close', () => {
+    if (playback.active) return;
     statusElement.className = 'glass status error';
     statusText.textContent = 'Verbindung wird erneuert …';
     setTimeout(connect, 700);
@@ -277,6 +476,7 @@ function animate(now) {
   const delta = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
   const time = now / 1000;
+  updatePlayback(now);
   const hasFace = tracking.face && now - tracking.receivedAt < 900;
   const response = 1 - Math.pow(0.001, delta);
 

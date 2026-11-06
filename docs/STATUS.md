@@ -12,6 +12,8 @@ Stand: 6. November 2026
 - Augen, Blickrichtung, Augenbrauen, Lippen, Kiefer und Kopfbewegung
 - 3D-Avatar ohne eingeblendetes Tracking-Gitter
 - lokale JSONL-Aufzeichnung auf ausdrücklichen Start
+- lokaler Aufnahme-Browser mit Pause, Zeitleiste und Rückkehr zur Live-Kamera
+- zeitgenaue Wiedergabe der gespeicherten Kopfpose und 52 Blendshapes
 - nativer macOS-Launcher mit eigenem Icon und ohne Terminalfenster
 - gemeinsames Beenden von Kamera, Tracker, WebView und lokalem Server
 
@@ -20,7 +22,8 @@ Stand: 6. November 2026
 - praktischer App-Start mit Live-Kamera bei ungefähr 30 Bildern pro Sekunde
 - macOS-Kamerafreigabe unter der App-Identität `de.michaelhein.gesichtsanalyse`
 - Ad-hoc-Codesignatur und gültige `Info.plist`
-- neun automatisierte Python-Tests, darunter die AVFoundation-Blocksignatur
+- zwölf automatisierte Python-Tests, darunter AVFoundation-Blocksignatur,
+  Aufnahme-API, Zeitnormalisierung und Schutz vor ungültigen Dateipfaden
 - expliziter Server-Lifecycle-Test mit Portfreigabe
 
 ## Mögliche nächste Schritte

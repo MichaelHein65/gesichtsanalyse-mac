@@ -96,7 +96,36 @@
       }
       button:hover { color: white; background: rgba(255,255,255,.14); transform: translateY(-1px); }
       button.recording { color: white; background: rgba(255, 82, 112, .72); }
+      button:disabled { cursor: default; opacity: .38; transform: none; }
       .key { opacity: .42; margin-left: 6px; font-size: 9px; }
+
+      .recordings-panel {
+        top: 82px;
+        right: 26px;
+        width: 370px;
+        max-height: calc(100% - 165px);
+        padding: 18px;
+        border-radius: 22px;
+        transition: opacity .2s ease, transform .2s ease;
+      }
+      .recordings-panel.hidden { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(.98); }
+      .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+      .panel-title { font-size: 16px; font-weight: 730; letter-spacing: -.02em; }
+      .panel-close { padding: 8px 10px; font-size: 16px; }
+      .recordings-list { display: grid; gap: 8px; max-height: 290px; overflow: auto; padding-right: 2px; }
+      .recording-item { width: 100%; padding: 12px 13px; text-align: left; display: grid; gap: 5px; }
+      .recording-item strong { font-size: 12px; color: rgba(255,255,255,.9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .recording-item span { font-size: 10px; color: rgba(255,255,255,.46); }
+      .recording-item.active { outline: 1px solid rgba(113,241,209,.65); background: rgba(74, 185, 166, .16); }
+      .empty-recordings { padding: 25px 12px; text-align: center; color: rgba(255,255,255,.47); font-size: 12px; line-height: 1.45; }
+      .playback-controls { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.09); }
+      .playback-controls.hidden { display: none; }
+      .playback-name { font-size: 11px; color: rgba(255,255,255,.68); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .timeline { width: 100%; margin: 13px 0 5px; accent-color: #71e8d3; }
+      .time-row { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,.4); font-variant-numeric: tabular-nums; }
+      .playback-actions { display: flex; gap: 8px; margin-top: 12px; }
+      .playback-actions button { flex: 1; }
+      .playback-actions .primary { color: #071a1c; background: #71e8d3; }
 
       .footer {
         position: fixed;
@@ -124,13 +153,34 @@
     </section>
     <div id="status" class="glass status"><i class="dot"></i><span id="statusText">Kamera wird gestartet …</span></div>
     <section class="glass metrics">
-      <div class="metric-title">LIVE-AUSDRUCK</div>
+      <div id="metricTitle" class="metric-title">LIVE-AUSDRUCK</div>
       <div class="row"><span>Lächeln</span><div class="bar"><i id="smileBar" class="fill"></i></div><span id="smileValue" class="value">0%</span></div>
       <div class="row"><span>Mund</span><div class="bar"><i id="jawBar" class="fill"></i></div><span id="jawValue" class="value">0%</span></div>
       <div class="row"><span>Brauen</span><div class="bar"><i id="browBar" class="fill"></i></div><span id="browValue" class="value">0%</span></div>
       <div class="row"><span>Blinzeln</span><div class="bar"><i id="blinkBar" class="fill"></i></div><span id="blinkValue" class="value">0%</span></div>
     </section>
+    <section id="recordingsPanel" class="glass recordings-panel hidden">
+      <header class="panel-header">
+        <div>
+          <div class="eyebrow">LOKAL GESPEICHERT</div>
+          <div class="panel-title">Aufnahmen</div>
+        </div>
+        <button id="panelCloseButton" class="panel-close" aria-label="Aufnahmen schließen">×</button>
+      </header>
+      <div id="recordingsList" class="recordings-list"></div>
+      <div id="emptyRecordings" class="empty-recordings">Aufnahmen werden geladen …</div>
+      <div id="playbackControls" class="playback-controls hidden">
+        <div id="playbackName" class="playback-name"></div>
+        <input id="timeline" class="timeline" type="range" min="0" max="1000" value="0" aria-label="Wiedergabeposition">
+        <div class="time-row"><span id="currentTime">0:00</span><span id="durationTime">0:00</span></div>
+        <div class="playback-actions">
+          <button id="playPauseButton" class="primary">Pause</button>
+          <button id="stopPlaybackButton">Live</button>
+        </div>
+      </div>
+    </section>
     <nav class="glass controls">
+      <button id="recordingsButton">Aufnahmen <span class="key">L</span></button>
       <button id="recordButton">Aufnehmen <span class="key">R</span></button>
       <button id="closeButton">Schließen <span class="key">Q</span></button>
     </nav>

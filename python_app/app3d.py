@@ -44,6 +44,76 @@ CAMERA_PERMISSION_METADATA = {
         }
     }
 }
+MAX_RECORDING_BYTES = 250 * 1024 * 1024
+
+
+def list_recordings(directory: Path) -> list[dict[str, Any]]:
+    """Return safe metadata for local JSONL recordings, newest first."""
+
+    if not directory.is_dir():
+        return []
+    recordings = []
+    for path in directory.glob("gesicht_*.jsonl"):
+        if not path.is_file():
+            continue
+        stat = path.stat()
+        recordings.append(
+            {
+                "name": path.name,
+                "size_bytes": stat.st_size,
+                "modified_ms": round(stat.st_mtime * 1000),
+            }
+        )
+    return sorted(recordings, key=lambda item: item["modified_ms"], reverse=True)
+
+
+def load_recording(directory: Path, name: str) -> dict[str, Any]:
+    """Load only animation data from a recording; raw landmarks stay on disk."""
+
+    if Path(name).name != name or not name.startswith("gesicht_") or not name.endswith(".jsonl"):
+        raise ValueError("Ungültiger Aufnahmedateiname")
+    path = directory / name
+    if not path.is_file():
+        raise FileNotFoundError(name)
+    if path.stat().st_size > MAX_RECORDING_BYTES:
+        raise ValueError("Aufnahme ist für die Wiedergabe zu groß")
+
+    frames: list[dict[str, Any]] = []
+    first_timestamp: int | None = None
+    with path.open("r", encoding="utf-8") as recording:
+        for line_number, line in enumerate(recording, start=1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+                timestamp = int(record["timestamp_ms"])
+                pose = record["head_pose_degrees"]
+                blendshapes = record["blendshapes"]
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"Ungültige Aufnahme in Zeile {line_number}") from error
+            if first_timestamp is None:
+                first_timestamp = timestamp
+            frames.append(
+                {
+                    "time_ms": max(0, timestamp - first_timestamp),
+                    "pose": {
+                        "yaw": float(pose.get("yaw", 0.0)),
+                        "pitch": float(pose.get("pitch", 0.0)),
+                        "roll": float(pose.get("roll", 0.0)),
+                    },
+                    "blendshapes": {
+                        str(key): float(value) for key, value in blendshapes.items()
+                    },
+                }
+            )
+    if not frames:
+        raise ValueError("Aufnahme enthält keine Messwerte")
+    return {
+        "name": name,
+        "frame_count": len(frames),
+        "duration_ms": frames[-1]["time_ms"],
+        "frames": frames,
+    }
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -131,9 +201,10 @@ def request_camera_permission() -> bool:
 class LocalAvatarServer:
     """Serves the bundled UI and broadcasts tracking frames over a local socket."""
 
-    def __init__(self) -> None:
+    def __init__(self, recordings_directory: Path = OUTPUT_DIRECTORY) -> None:
         self.loop: asyncio.AbstractEventLoop | None = None
         self.port: int | None = None
+        self.recordings_directory = recordings_directory
         self._clients: set[web.WebSocketResponse] = set()
         self._ready = threading.Event()
         self._thread: threading.Thread | None = None
@@ -173,6 +244,8 @@ class LocalAvatarServer:
         app = web.Application()
         app.router.add_get("/", self._index)
         app.router.add_get("/ws", self._websocket)
+        app.router.add_get("/api/recordings", self._recordings_index)
+        app.router.add_get("/api/recordings/{name}", self._recording_data)
         app.router.add_static("/assets/", WEB_ROOT / "assets", show_index=False)
         app.router.add_static("/vendor/", WEB_ROOT / "vendor", show_index=False)
 
@@ -192,6 +265,20 @@ class LocalAvatarServer:
 
     async def _index(self, _request: web.Request) -> web.FileResponse:
         return web.FileResponse(WEB_ROOT / "index.html")
+
+    async def _recordings_index(self, _request: web.Request) -> web.Response:
+        return web.json_response({"recordings": list_recordings(self.recordings_directory)})
+
+    async def _recording_data(self, request: web.Request) -> web.Response:
+        try:
+            recording = load_recording(
+                self.recordings_directory, request.match_info["name"]
+            )
+        except FileNotFoundError as error:
+            raise web.HTTPNotFound(text="Aufnahme nicht gefunden") from error
+        except ValueError as error:
+            raise web.HTTPBadRequest(text=str(error)) from error
+        return web.json_response(recording)
 
     async def _websocket(self, request: web.Request) -> web.WebSocketResponse:
         socket = web.WebSocketResponse(heartbeat=15)
